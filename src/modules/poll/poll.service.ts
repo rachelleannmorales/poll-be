@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Poll } from '../../entities/poll.entity';
 import { Vote } from '../../entities/vote.entity';
-import { EventsGateway } from 'src/gateways/events.gateway';
+import { EventsGateway } from '../../gateways/events.gateway';
 @Injectable() 
 export class PollService {
   constructor(
@@ -50,6 +50,10 @@ export class PollService {
       relations: ['votes'],
     });
     if (!poll) throw new NotFoundException('Poll not found');
+
+    if (poll.expiresAt && new Date(poll.expiresAt) < new Date()) {
+      throw new BadRequestException('Poll has expired');
+    }
   
     const existing = await this.voteRepository.findOne({
       where: { poll: { id: parseInt(pollId) }, voterHash },
